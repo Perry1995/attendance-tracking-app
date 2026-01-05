@@ -23,6 +23,8 @@ import {
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Download, RefreshCw } from 'lucide-react';
 import { attendanceApi, AttendanceRecord } from '@/lib/api/attendance';
+import { classesApi } from '@/lib/api/classes';
+import { toast } from 'sonner';
 
 const statusColors = {
   present: 'success',
@@ -35,12 +37,29 @@ export default function AttendancePage() {
   const [date, setDate] = useState<Date>(new Date());
   const [selectedClass, setSelectedClass] = useState('all');
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  useEffect(() => {
     fetchAttendance();
   }, [date, selectedClass]);
+
+  const fetchClasses = async () => {
+    try {
+      const response = await classesApi.getClasses();
+      if (response.success) {
+        setClasses(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch classes:', error);
+      toast.error('Failed to load classes');
+    }
+  };
 
   const fetchAttendance = async () => {
     try {
@@ -61,6 +80,7 @@ export default function AttendancePage() {
       }
     } catch (error) {
       console.error('Failed to fetch attendance:', error);
+      toast.error('Failed to load attendance records');
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +108,7 @@ export default function AttendancePage() {
 
   const handleSaveAttendance = async () => {
     if (selectedClass === 'all') {
-      console.warn('Please select a specific class to save attendance');
+      toast.warning('Please select a specific class to save attendance');
       return;
     }
 
@@ -105,9 +125,10 @@ export default function AttendancePage() {
         })),
       });
 
-      console.log('Attendance saved successfully');
+      toast.success('Attendance saved successfully');
     } catch (error) {
       console.error('Failed to save attendance:', error);
+      toast.error('Failed to save attendance');
     } finally {
       setIsSaving(false);
     }
@@ -222,8 +243,11 @@ export default function AttendancePage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Classes</SelectItem>
-                      <SelectItem value="math-101">Mathematics 101 - A</SelectItem>
-                      <SelectItem value="physics">Physics - B</SelectItem>
+                      {classes.map((cls) => (
+                        <SelectItem key={cls.id} value={cls.id}>
+                          {cls.name} {cls.section ? `- ${cls.section}` : ''}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

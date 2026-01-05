@@ -64,11 +64,11 @@ export const attendanceService = {
     endDate?: string;
   }): Promise<AttendanceWithDetails[]> {
     let queryText = `
-      SELECT ar.*, 
+      SELECT ar.*,
              u.id as student_id, u.email as student_email, u.first_name as student_first_name, u.last_name as student_last_name,
              mu.id as marker_id, mu.first_name as marker_first_name, mu.last_name as marker_last_name
       FROM attendance_records ar
-      LEFT JOIN users u ON ar.student_id = $u.id
+      LEFT JOIN users u ON ar.student_id = u.id
       LEFT JOIN users mu ON ar.marked_by = mu.id
       WHERE 1=1
     `;
@@ -77,25 +77,25 @@ export const attendanceService = {
 
     if (filters.classId) {
       paramCount++;
-      queryText += ` AND ar.class_id = $$${paramCount}`;
+      queryText += ` AND ar.class_id = ${paramCount}`;
       params.push(filters.classId);
     }
 
     if (filters.studentId) {
       paramCount++;
-      queryText += ` AND ar.student_id = $$${paramCount}`;
+      queryText += ` AND ar.student_id = ${paramCount}`;
       params.push(filters.studentId);
     }
 
     if (filters.startDate) {
       paramCount++;
-      queryText += ` AND ar.date >= $$${paramCount}`;
+      queryText += ` AND ar.date >= ${paramCount}`;
       params.push(filters.startDate);
     }
 
     if (filters.endDate) {
       paramCount++;
-      queryText += ` AND ar.date <= $$${paramCount}`;
+      queryText += ` AND ar.date <= ${paramCount}`;
       params.push(filters.endDate);
     }
 
@@ -107,13 +107,13 @@ export const attendanceService = {
 
   async getClassAttendance(classId: string, date?: string): Promise<AttendanceWithDetails[]> {
     let queryText = `
-      SELECT ar.*, 
+      SELECT ar.*,
              u.id as student_id, u.email as student_email, u.first_name as student_first_name, u.last_name as student_last_name,
              mu.id as marker_id, mu.first_name as marker_first_name, mu.last_name as marker_last_name
       FROM attendance_records ar
-      LEFT JOIN users u ON ar.student_id = $u.id
+      LEFT JOIN users u ON ar.student_id = u.id
       LEFT JOIN users mu ON ar.marked_by = mu.id
-      WHERE ar.class_id = $$1
+      WHERE ar.class_id = $1
     `;
     const params: any[] = [classId];
 
@@ -133,26 +133,26 @@ export const attendanceService = {
     filters?: { startDate?: string; endDate?: string }
   ): Promise<AttendanceWithDetails[]> {
     let queryText = `
-      SELECT ar.*, 
+      SELECT ar.*,
              c.name as class_name, c.section as class_section,
              mu.id as marker_id, mu.first_name as marker_first_name, mu.last_name as marker_last_name
       FROM attendance_records ar
-      LEFT JOIN classes c ON ar.class_id = $c.id
+      LEFT JOIN classes c ON ar.class_id = c.id
       LEFT JOIN users mu ON ar.marked_by = mu.id
-      WHERE ar.student_id = $$1
+      WHERE ar.student_id = $1
     `;
     const params: any[] = [studentId];
     let paramCount = 1;
 
     if (filters?.startDate) {
       paramCount++;
-      queryText += ` AND ar.date >= $$${paramCount}`;
+      queryText += ` AND ar.date >= ${paramCount}`;
       params.push(filters.startDate);
     }
 
     if (filters?.endDate) {
       paramCount++;
-      queryText += ` AND ar.date <= $$${paramCount}`;
+      queryText += ` AND ar.date <= ${paramCount}`;
       params.push(filters.endDate);
     }
 
@@ -169,7 +169,7 @@ export const attendanceService = {
     endDate?: string;
   }): Promise<AttendanceSummary> {
     let queryText = `
-      SELECT 
+      SELECT
         COUNT(DISTINCT date) as total_days,
         COUNT(CASE WHEN status = 'present' THEN 1 END) as present,
         COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent,
@@ -183,25 +183,25 @@ export const attendanceService = {
 
     if (filters.classId) {
       paramCount++;
-      queryText += ` AND class_id = $$${paramCount}`;
+      queryText += ` AND class_id = ${paramCount}`;
       params.push(filters.classId);
     }
 
     if (filters.studentId) {
       paramCount++;
-      queryText += ` AND student_id = $$${paramCount}`;
+      queryText += ` AND student_id = ${paramCount}`;
       params.push(filters.studentId);
     }
 
     if (filters.startDate) {
       paramCount++;
-      queryText += ` AND date >= $$${paramCount}`;
+      queryText += ` AND date >= ${paramCount}`;
       params.push(filters.startDate);
     }
 
     if (filters.endDate) {
       paramCount++;
-      queryText += ` AND date <= $$${paramCount}`;
+      queryText += ` AND date <= ${paramCount}`;
       params.push(filters.endDate);
     }
 
@@ -233,7 +233,7 @@ export const attendanceService = {
     endDate?: string;
   }): Promise<any[]> {
     let queryText = `
-      SELECT 
+      SELECT
         date,
         COUNT(CASE WHEN status = 'present' THEN 1 END) as present,
         COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent,
@@ -247,25 +247,25 @@ export const attendanceService = {
 
     if (filters.classId) {
       paramCount++;
-      queryText += ` AND class_id = $${paramCount}`;
+      queryText += ` AND class_id = ${paramCount}`;
       params.push(filters.classId);
     }
 
     if (filters.studentId) {
       paramCount++;
-      queryText += ` AND student_id = $${paramCount}`;
+      queryText += ` AND student_id = ${paramCount}`;
       params.push(filters.studentId);
     }
 
     if (filters.startDate) {
       paramCount++;
-      queryText += ` AND date >= $${paramCount}`;
+      queryText += ` AND date >= ${paramCount}`;
       params.push(filters.startDate);
     }
 
     if (filters.endDate) {
       paramCount++;
-      queryText += ` AND date <= $${paramCount}`;
+      queryText += ` AND date <= ${paramCount}`;
       params.push(filters.endDate);
     }
 

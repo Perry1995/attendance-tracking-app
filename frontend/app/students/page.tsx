@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { studentsApi, Student } from '@/lib/api/students';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { toast } from 'sonner';
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -66,6 +67,7 @@ export default function StudentsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch students:', error);
+      toast.error('Failed to load students');
     } finally {
       setIsLoading(false);
     }

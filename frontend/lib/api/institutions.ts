@@ -29,8 +29,10 @@ export interface CreateInstitutionData {
 }
 
 export const institutionsApi = {
-  getAll: async (): Promise<Institution[]> => {
-    const response = await api.get<Institution[]>('/institutions');
+  getAll: async (params?: {
+    search?: string;
+  }): Promise<{ success: boolean; data: Institution[] }> => {
+    const response = await api.get<{ success: boolean; data: Institution[] }>('/institutions', { params });
     return response.data;
   },
 
