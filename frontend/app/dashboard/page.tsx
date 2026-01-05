@@ -1,82 +1,287 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User } from 'lucide-react';
+import { dashboardApi, DashboardStats, ActivityItem } from '@/lib/api/dashboard';
+import { Users, BookOpen, UserCheck, UserX, AlertCircle, Activity } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const userRole = user?.roles?.[0]?.role || '';
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsResponse, activityResponse] = await Promise.all([
+          dashboardApi.getStats(),
+          dashboardApi.getRecentActivity(),
+        ]);
+
+        if (statsResponse.success) {
+          setStats(statsResponse.data);
+        }
+        if (activityResponse.success) {
+          setActivities(activityResponse.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const getRoleBasedTitle = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'Admin Dashboard';
+      case 'teacher':
+        return 'Teacher Dashboard';
+      case 'student':
+        return 'My Attendance';
+      case 'guardian':
+        return 'Children\'s Attendance';
+      default:
+        return 'Dashboard';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <User className="h-4 w-4" />
-              <span className="text-sm">{user?.firstName} {user?.lastName}</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-        
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">No students enrolled yet</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">No classes created yet</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Present Today</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">No attendance recorded</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Absent Today</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">No attendance recorded</p>
-            </CardContent>
-          </Card>
-        </div>
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Welcome to Attendance Tracker</CardTitle>
-            <CardDescription>
-              Your dashboard is ready. Start by adding students and creating classes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              This is a placeholder dashboard. Once the backend is fully implemented, this page will
-              display real-time attendance statistics and insights.
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">{getRoleBasedTitle()}</h1>
+            <p className="text-muted-foreground">
+              Welcome back, {user?.firstName} {user?.lastName}
             </p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+
+          {(userRole === 'admin' || userRole === 'teacher') && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalStudents || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {userRole === 'admin' ? 'In your institution' : 'In your classes'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalClasses || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {userRole === 'admin' ? 'Active classes' : 'Assigned to you'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Present Today</CardTitle>
+                  <UserCheck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{stats?.presentToday || 0}</div>
+                  <p className="text-xs text-muted-foreground">Marked as present</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Absent Today</CardTitle>
+                  <UserX className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{stats?.absentToday || 0}</div>
+                  <p className="text-xs text-muted-foreground">Marked as absent</p>
+                </CardContent>
+              </Card>
+
+              {stats?.lateToday !== undefined && stats.lateToday > 0 && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Late Today</CardTitle>
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-yellow-600">{stats.lateToday}</div>
+                    <p className="text-xs text-muted-foreground">Arrived late</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {stats?.attendanceRate !== undefined && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {userRole === 'student' ? 'Attendance Rate (30d)' : 'Today\'s Rate'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.attendanceRate}%</div>
+                    <p className="text-xs text-muted-foreground">
+                      {userRole === 'student' ? 'Last 30 days' : 'Overall attendance'}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {userRole === 'student' && (
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Present (30 days)</CardTitle>
+                  <UserCheck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {stats?.presentLast30Days || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Days present</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Absent (30 days)</CardTitle>
+                  <UserX className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{stats?.absentLast30Days || 0}</div>
+                  <p className="text-xs text-muted-foreground">Days absent</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Late (30 days)</CardTitle>
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {stats?.lateLast30Days || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Days late</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {userRole === 'guardian' && (
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Children</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalStudents || 0}</div>
+                  <p className="text-xs text-muted-foreground">Linked to your account</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Present Today</CardTitle>
+                  <UserCheck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{stats?.presentToday || 0}</div>
+                  <p className="text-xs text-muted-foreground">Children present</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Absent Today</CardTitle>
+                  <UserX className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{stats?.absentToday || 0}</div>
+                  <p className="text-xs text-muted-foreground">Children absent</p>
+                </CardContent>
+              </Card>
+
+              {stats?.lateToday !== undefined && stats.lateToday > 0 && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Late Today</CardTitle>
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-yellow-600">{stats.lateToday}</div>
+                    <p className="text-xs text-muted-foreground">Children late</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {activities.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  <CardTitle>Recent Activity</CardTitle>
+                </div>
+                <CardDescription>Latest updates in your institution</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {activities.slice(0, 5).map((activity, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium">{activity.title}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {activity.description}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(activity.timestamp).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }
