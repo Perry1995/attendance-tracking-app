@@ -23,6 +23,7 @@ router.get('/', attendanceController.getAttendanceRecords);
 router.get('/class/:classId', attendanceController.getClassAttendance);
 router.get('/student/:studentId', attendanceController.getStudentAttendance);
 router.get('/summary', attendanceController.getAttendanceSummary);
+router.get('/summary/daily', attendanceController.getDailyAttendanceSummary);
 
 // Admin/Teacher only routes
 router.post(

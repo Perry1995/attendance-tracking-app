@@ -8,6 +8,7 @@ import institutionRoutes from './institutionRoutes';
 import classRoutes from './classRoutes';
 import studentRoutes from './studentRoutes';
 import attendanceRoutes from './attendanceRoutes';
+import reportRoutes from './reportRoutes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/institutions', institutionRoutes);
 router.use('/classes', classRoutes);
 router.use('/students', studentRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/reports', reportRoutes);
 
 export default router;

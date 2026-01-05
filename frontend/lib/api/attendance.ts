@@ -79,6 +79,16 @@ export const attendanceApi = {
     return response.data;
   },
 
+  getDailySummary: async (params?: {
+    classId?: string;
+    studentId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{ success: boolean; data: any[] }> => {
+    const response = await api.get<{ success: boolean; data: any[] }>('/attendance/summary/daily', { params });
+    return response.data;
+  },
+
   create: async (data: {
     classId: string;
     date: string;

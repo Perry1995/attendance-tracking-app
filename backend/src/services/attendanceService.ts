@@ -1,5 +1,10 @@
 import { query } from '../config/database';
 import { AttendanceRecord, AttendanceStatus } from '../types';
+import { format } from 'date-fns';
+import { guardianService } from './guardianService';
+import { emailService } from './emailService';
+import { socketService } from './socketService';
+import { logger } from '../config/logger';
 
 export interface CreateAttendanceRecord {
   studentId: string;
@@ -39,7 +44,7 @@ export const attendanceService = {
               u.id as student_id, u.email as student_email, u.first_name as student_first_name, u.last_name as student_last_name,
               mu.id as marker_id, mu.first_name as marker_first_name, mu.last_name as marker_last_name
        FROM attendance_records ar
-       LEFT JOIN users u ON ar.student_id = u.id
+       LEFT JOIN users u ON ar.student_id = $u.id
        LEFT JOIN users mu ON ar.marked_by = mu.id
        WHERE ar.id = $1`,
       [id]
@@ -63,7 +68,7 @@ export const attendanceService = {
              u.id as student_id, u.email as student_email, u.first_name as student_first_name, u.last_name as student_last_name,
              mu.id as marker_id, mu.first_name as marker_first_name, mu.last_name as marker_last_name
       FROM attendance_records ar
-      LEFT JOIN users u ON ar.student_id = u.id
+      LEFT JOIN users u ON ar.student_id = $u.id
       LEFT JOIN users mu ON ar.marked_by = mu.id
       WHERE 1=1
     `;
@@ -72,25 +77,25 @@ export const attendanceService = {
 
     if (filters.classId) {
       paramCount++;
-      queryText += ` AND ar.class_id = $${paramCount}`;
+      queryText += ` AND ar.class_id = $$${paramCount}`;
       params.push(filters.classId);
     }
 
     if (filters.studentId) {
       paramCount++;
-      queryText += ` AND ar.student_id = $${paramCount}`;
+      queryText += ` AND ar.student_id = $$${paramCount}`;
       params.push(filters.studentId);
     }
 
     if (filters.startDate) {
       paramCount++;
-      queryText += ` AND ar.date >= $${paramCount}`;
+      queryText += ` AND ar.date >= $$${paramCount}`;
       params.push(filters.startDate);
     }
 
     if (filters.endDate) {
       paramCount++;
-      queryText += ` AND ar.date <= $${paramCount}`;
+      queryText += ` AND ar.date <= $$${paramCount}`;
       params.push(filters.endDate);
     }
 
@@ -106,9 +111,9 @@ export const attendanceService = {
              u.id as student_id, u.email as student_email, u.first_name as student_first_name, u.last_name as student_last_name,
              mu.id as marker_id, mu.first_name as marker_first_name, mu.last_name as marker_last_name
       FROM attendance_records ar
-      LEFT JOIN users u ON ar.student_id = u.id
+      LEFT JOIN users u ON ar.student_id = $u.id
       LEFT JOIN users mu ON ar.marked_by = mu.id
-      WHERE ar.class_id = $1
+      WHERE ar.class_id = $$1
     `;
     const params: any[] = [classId];
 
@@ -132,22 +137,22 @@ export const attendanceService = {
              c.name as class_name, c.section as class_section,
              mu.id as marker_id, mu.first_name as marker_first_name, mu.last_name as marker_last_name
       FROM attendance_records ar
-      LEFT JOIN classes c ON ar.class_id = c.id
+      LEFT JOIN classes c ON ar.class_id = $c.id
       LEFT JOIN users mu ON ar.marked_by = mu.id
-      WHERE ar.student_id = $1
+      WHERE ar.student_id = $$1
     `;
     const params: any[] = [studentId];
     let paramCount = 1;
 
     if (filters?.startDate) {
       paramCount++;
-      queryText += ` AND ar.date >= $${paramCount}`;
+      queryText += ` AND ar.date >= $$${paramCount}`;
       params.push(filters.startDate);
     }
 
     if (filters?.endDate) {
       paramCount++;
-      queryText += ` AND ar.date <= $${paramCount}`;
+      queryText += ` AND ar.date <= $$${paramCount}`;
       params.push(filters.endDate);
     }
 
@@ -166,6 +171,70 @@ export const attendanceService = {
     let queryText = `
       SELECT 
         COUNT(DISTINCT date) as total_days,
+        COUNT(CASE WHEN status = 'present' THEN 1 END) as present,
+        COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent,
+        COUNT(CASE WHEN status = 'late' THEN 1 END) as late,
+        COUNT(CASE WHEN status = 'excused' THEN 1 END) as excused
+      FROM attendance_records
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 0;
+
+    if (filters.classId) {
+      paramCount++;
+      queryText += ` AND class_id = $$${paramCount}`;
+      params.push(filters.classId);
+    }
+
+    if (filters.studentId) {
+      paramCount++;
+      queryText += ` AND student_id = $$${paramCount}`;
+      params.push(filters.studentId);
+    }
+
+    if (filters.startDate) {
+      paramCount++;
+      queryText += ` AND date >= $$${paramCount}`;
+      params.push(filters.startDate);
+    }
+
+    if (filters.endDate) {
+      paramCount++;
+      queryText += ` AND date <= $$${paramCount}`;
+      params.push(filters.endDate);
+    }
+
+    const result = await query(queryText, params);
+    const row = result.rows[0];
+
+    const totalDays = parseInt(row.total_days, 10) || 0;
+    const present = parseInt(row.present, 10) || 0;
+    const absent = parseInt(row.absent, 10) || 0;
+    const late = parseInt(row.late, 10) || 0;
+    const excused = parseInt(row.excused, 10) || 0;
+    const totalMarked = present + absent + late + excused;
+    const attendanceRate = totalMarked > 0 ? ((present + late + excused) / totalMarked) * 100 : 0;
+
+    return {
+      totalDays,
+      present,
+      absent,
+      late,
+      excused,
+      attendanceRate: Math.round(attendanceRate * 100) / 100,
+    };
+  },
+
+  async getDailyAttendanceSummary(filters: {
+    classId?: string;
+    studentId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any[]> {
+    let queryText = `
+      SELECT 
+        date,
         COUNT(CASE WHEN status = 'present' THEN 1 END) as present,
         COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent,
         COUNT(CASE WHEN status = 'late' THEN 1 END) as late,
@@ -200,25 +269,16 @@ export const attendanceService = {
       params.push(filters.endDate);
     }
 
+    queryText += ' GROUP BY date ORDER BY date ASC';
+
     const result = await query(queryText, params);
-    const row = result.rows[0];
-
-    const totalDays = parseInt(row.total_days, 10) || 0;
-    const present = parseInt(row.present, 10) || 0;
-    const absent = parseInt(row.absent, 10) || 0;
-    const late = parseInt(row.late, 10) || 0;
-    const excused = parseInt(row.excused, 10) || 0;
-    const totalMarked = present + absent + late + excused;
-    const attendanceRate = totalMarked > 0 ? ((present + late + excused) / totalMarked) * 100 : 0;
-
-    return {
-      totalDays,
-      present,
-      absent,
-      late,
-      excused,
-      attendanceRate: Math.round(attendanceRate * 100) / 100,
-    };
+    return result.rows.map(row => ({
+      date: format(new Date(row.date), 'yyyy-MM-dd'),
+      present: parseInt(row.present, 10) || 0,
+      absent: parseInt(row.absent, 10) || 0,
+      late: parseInt(row.late, 10) || 0,
+      excused: parseInt(row.excused, 10) || 0,
+    }));
   },
 
   async createAttendanceRecords(
@@ -268,9 +328,50 @@ export const attendanceService = {
             }
           : undefined,
       });
+
+      // Send notifications for absent or late status
+      if (record.status === 'absent' || record.status === 'late') {
+        this.sendAttendanceAlerts(record.studentId, record.status, date).catch(err => 
+          logger.error(`Failed to send attendance alerts: ${err.message}`)
+        );
+      }
     }
 
     return createdRecords;
+  },
+
+  async sendAttendanceAlerts(studentId: string, status: string, date: string) {
+    try {
+      const guardians = await guardianService.getGuardiansForStudent(studentId);
+      const studentResult = await query(
+        `SELECT first_name, last_name FROM users WHERE id = $1`,
+        [studentId]
+      );
+      const student = studentResult.rows[0];
+      const studentName = `${student.first_name} ${student.last_name}`;
+
+      for (const rel of guardians) {
+        if (rel.guardian?.email) {
+          // Send Email
+          await emailService.sendAttendanceAlert(
+            rel.guardian.email,
+            studentName,
+            date,
+            status
+          );
+        }
+        
+        // Send Real-time notification
+        socketService.sendToUser(rel.guardianId, 'attendance-alert', {
+          studentName,
+          status,
+          date,
+          message: `${studentName} was marked ${status} on ${date}`
+        });
+      }
+    } catch (error) {
+      logger.error('Error sending attendance alerts:', error);
+    }
   },
 
   async updateAttendanceRecord(

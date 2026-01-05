@@ -7,3 +7,4 @@ export * from './classes';
 export * from './institutions';
 export * from './students';
 export * from './attendance';
+export * from './reports';
