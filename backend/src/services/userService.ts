@@ -179,6 +179,115 @@ export const userService = {
 
     return result.rows.length > 0;
   },
+
+  async getUsers(filters?: {
+    search?: string;
+    role?: string;
+    institutionId?: string;
+  }): Promise<UserWithRoles[]> {
+    let queryText = `
+      SELECT DISTINCT u.*, COALESCE(
+        json_agg(DISTINCT jsonb_build_object('institutionId', ur.institution_id, 'role', ur.role))
+        FILTER (WHERE ur.institution_id IS NOT NULL), '[]'
+      ) as roles
+      FROM users u
+      LEFT JOIN user_roles ur ON u.id = ur.user_id
+      WHERE u.deleted_at IS NULL
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (filters?.search) {
+      queryText += ` AND (
+        u.first_name ILIKE ${paramCount} OR
+        u.last_name ILIKE ${paramCount} OR
+        u.email ILIKE ${paramCount}
+      )`;
+      params.push(`%${filters.search}%`);
+      paramCount++;
+    }
+
+    if (filters?.role) {
+      queryText += ` AND ur.role = ${paramCount}`;
+      params.push(filters.role);
+      paramCount++;
+    }
+
+    if (filters?.institutionId) {
+      queryText += ` AND ur.institution_id = ${paramCount}`;
+      params.push(filters.institutionId);
+      paramCount++;
+    }
+
+    queryText += ' GROUP BY u.id ORDER BY u.created_at DESC';
+
+    const result = await query(queryText, params);
+    return result.rows;
+  },
+
+  async bulkImportUsers(users: Array<{
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    role: string;
+    institutionId?: string;
+  }>): Promise<{
+    success: number;
+    failed: number;
+    errors: Array<{ email: string; error: string }>;
+  }> {
+    const bcrypt = require('bcrypt');
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as Array<{ email: string; error: string }>,
+    };
+
+    const defaultInstitutionId = await this.createDefaultInstitutionIfNotExists();
+
+    for (const userData of users) {
+      try {
+        // Validate required fields
+        if (!userData.email || !userData.password || !userData.firstName || !userData.lastName) {
+          throw new Error('Missing required fields');
+        }
+
+        // Check if email already exists
+        const emailExists = await this.emailExists(userData.email);
+        if (emailExists) {
+          throw new Error('Email already exists');
+        }
+
+        // Hash password
+        const passwordHash = await bcrypt.hash(userData.password, 10);
+
+        // Create user
+        const user = await this.createUser({
+          email: userData.email,
+          passwordHash,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone,
+        });
+
+        // Assign role
+        const institutionId = userData.institutionId || defaultInstitutionId;
+        await this.addUserRole(user.id, institutionId, userData.role);
+
+        results.success++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          email: userData.email,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return results;
+  },
 };
 
 export default userService;

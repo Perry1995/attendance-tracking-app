@@ -32,32 +32,33 @@ export const studentsApi = {
   getAll: async (params?: {
     institutionId?: string;
     search?: string;
-  }): Promise<Student[]> => {
-    const response = await api.get<Student[]>('/students', { params });
+  }): Promise<{ success: boolean; data: Student[] }> => {
+    const response = await api.get<{ success: boolean; data: Student[] }>('/students', { params });
     return response.data;
   },
 
-  getById: async (id: string): Promise<Student> => {
-    const response = await api.get<Student>(`/students/${id}`);
+  getById: async (id: string): Promise<{ success: boolean; data: Student }> => {
+    const response = await api.get<{ success: boolean; data: Student }>(`/students/${id}`);
     return response.data;
   },
 
-  create: async (data: CreateStudentData): Promise<Student> => {
-    const response = await api.post<Student>('/students', data);
+  create: async (data: CreateStudentData): Promise<{ success: boolean; data: Student }> => {
+    const response = await api.post<{ success: boolean; data: Student }>('/students', data);
     return response.data;
   },
 
-  update: async (id: string, data: Partial<CreateStudentData>): Promise<Student> => {
-    const response = await api.put<Student>(`/students/${id}`, data);
+  update: async (id: string, data: Partial<CreateStudentData>): Promise<{ success: boolean; data: Student }> => {
+    const response = await api.put<{ success: boolean; data: Student }>(`/students/${id}`, data);
     return response.data;
   },
 
-  delete: async (id: string): Promise<void> => {
-    await api.delete(`/students/${id}`);
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const response = await api.delete<{ success: boolean }>(`/students/${id}`);
+    return response.data;
   },
 
-  getClasses: async (studentId: string): Promise<any[]> => {
-    const response = await api.get(`/students/${studentId}/classes`);
+  getClasses: async (studentId: string): Promise<{ success: boolean; data: any[] }> => {
+    const response = await api.get<{ success: boolean; data: any[] }>(`/students/${studentId}/classes`);
     return response.data;
   },
 };

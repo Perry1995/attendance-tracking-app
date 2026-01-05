@@ -47,13 +47,13 @@ export const attendanceApi = {
     studentId?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<AttendanceRecord[]> => {
-    const response = await api.get<AttendanceRecord[]>('/attendance', { params });
+  }): Promise<{ success: boolean; data: AttendanceRecord[] }> => {
+    const response = await api.get<{ success: boolean; data: AttendanceRecord[] }>('/attendance', { params });
     return response.data;
   },
 
-  getClassAttendance: async (classId: string, date?: string): Promise<AttendanceRecord[]> => {
-    const response = await api.get<AttendanceRecord[]>(`/attendance/class/${classId}`, {
+  getClassAttendance: async (classId: string, date?: string): Promise<{ success: boolean; data: AttendanceRecord[] }> => {
+    const response = await api.get<{ success: boolean; data: AttendanceRecord[] }>(`/attendance/class/${classId}`, {
       params: { date },
     });
     return response.data;
@@ -62,8 +62,8 @@ export const attendanceApi = {
   getStudentAttendance: async (
     studentId: string,
     params?: { startDate?: string; endDate?: string }
-  ): Promise<AttendanceRecord[]> => {
-    const response = await api.get<AttendanceRecord[]>(`/attendance/student/${studentId}`, {
+  ): Promise<{ success: boolean; data: AttendanceRecord[] }> => {
+    const response = await api.get<{ success: boolean; data: AttendanceRecord[] }>(`/attendance/student/${studentId}`, {
       params,
     });
     return response.data;
@@ -74,8 +74,8 @@ export const attendanceApi = {
     studentId?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<AttendanceSummary> => {
-    const response = await api.get<AttendanceSummary>('/attendance/summary', { params });
+  }): Promise<{ success: boolean; data: AttendanceSummary }> => {
+    const response = await api.get<{ success: boolean; data: AttendanceSummary }>('/attendance/summary', { params });
     return response.data;
   },
 
@@ -84,20 +84,21 @@ export const attendanceApi = {
     date: string;
     records: CreateAttendanceRecord[];
     notes?: string;
-  }): Promise<AttendanceRecord[]> => {
-    const response = await api.post<AttendanceRecord[]>('/attendance', data);
+  }): Promise<{ success: boolean; data: AttendanceRecord[] }> => {
+    const response = await api.post<{ success: boolean; data: AttendanceRecord[] }>('/attendance', data);
     return response.data;
   },
 
   update: async (
     id: string,
     data: Partial<CreateAttendanceRecord>
-  ): Promise<AttendanceRecord> => {
-    const response = await api.put<AttendanceRecord>(`/attendance/${id}`, data);
+  ): Promise<{ success: boolean; data: AttendanceRecord }> => {
+    const response = await api.put<{ success: boolean; data: AttendanceRecord }>(`/attendance/${id}`, data);
     return response.data;
   },
 
-  delete: async (id: string): Promise<void> => {
-    await api.delete(`/attendance/${id}`);
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const response = await api.delete<{ success: boolean }>(`/attendance/${id}`);
+    return response.data;
   },
 };

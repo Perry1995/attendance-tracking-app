@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,35 +22,7 @@ import {
 } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Download, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
-
-// Mock data for demonstration
-const mockAttendanceRecords = [
-  {
-    id: '1',
-    student: { firstName: 'Alice', lastName: 'Johnson', email: 'alice@school.edu' },
-    status: 'present',
-    checkInTime: '08:00 AM',
-  },
-  {
-    id: '2',
-    student: { firstName: 'Bob', lastName: 'Smith', email: 'bob@school.edu' },
-    status: 'late',
-    checkInTime: '08:15 AM',
-  },
-  {
-    id: '3',
-    student: { firstName: 'Carol', lastName: 'Williams', email: 'carol@school.edu' },
-    status: 'absent',
-    checkInTime: null,
-  },
-  {
-    id: '4',
-    student: { firstName: 'David', lastName: 'Brown', email: 'david@school.edu' },
-    status: 'present',
-    checkInTime: '07:55 AM',
-  },
-];
+import { attendanceApi, AttendanceRecord } from '@/lib/api/attendance';
 
 const statusColors = {
   present: 'success',
@@ -59,16 +34,84 @@ const statusColors = {
 export default function AttendancePage() {
   const [date, setDate] = useState<Date>(new Date());
   const [selectedClass, setSelectedClass] = useState('all');
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const presentCount = mockAttendanceRecords.filter(
+  useEffect(() => {
+    fetchAttendance();
+  }, [date, selectedClass]);
+
+  const fetchAttendance = async () => {
+    try {
+      setIsLoading(true);
+      const formattedDate = format(date, 'yyyy-MM-dd');
+
+      let response;
+      if (selectedClass !== 'all') {
+        response = await attendanceApi.getClassAttendance(selectedClass, formattedDate);
+      } else {
+        response = await attendanceApi.getRecords({
+          date: formattedDate,
+        });
+      }
+
+      if (response.success) {
+        setAttendanceRecords(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch attendance:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const presentCount = attendanceRecords.filter(
     (r) => r.status === 'present'
   ).length;
-  const absentCount = mockAttendanceRecords.filter(
+  const absentCount = attendanceRecords.filter(
     (r) => r.status === 'absent'
   ).length;
-  const lateCount = mockAttendanceRecords.filter(
+  const lateCount = attendanceRecords.filter(
     (r) => r.status === 'late'
   ).length;
+
+  const handleStatusChange = (recordId: string, newStatus: string) => {
+    setAttendanceRecords(records =>
+      records.map(record =>
+        record.id === recordId
+          ? { ...record, status: newStatus as any }
+          : record
+      )
+    );
+  };
+
+  const handleSaveAttendance = async () => {
+    if (selectedClass === 'all') {
+      console.warn('Please select a specific class to save attendance');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const formattedDate = format(date, 'yyyy-MM-dd');
+
+      await attendanceApi.create({
+        classId: selectedClass,
+        date: formattedDate,
+        records: attendanceRecords.map(r => ({
+          studentId: r.studentId,
+          status: r.status,
+        })),
+      });
+
+      console.log('Attendance saved successfully');
+    } catch (error) {
+      console.error('Failed to save attendance:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -126,11 +169,11 @@ export default function AttendancePage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {Math.round(
-                    ((presentCount + lateCount) /
-                      mockAttendanceRecords.length) *
-                      100
-                  )}
+                  {attendanceRecords.length > 0
+                    ? Math.round(
+                        ((presentCount + lateCount) / attendanceRecords.length) * 100
+                      )
+                    : 0}
                   %
                 </div>
               </CardContent>
@@ -187,55 +230,72 @@ export default function AttendancePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {mockAttendanceRecords.map((record) => (
-                  <div
-                    key={record.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                        <span className="font-medium">
-                          {record.student.firstName.charAt(0)}
-                          {record.student.lastName.charAt(0)}
-                        </span>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : attendanceRecords.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    No attendance records found. Select a class to view or record attendance.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    {attendanceRecords.map((record) => (
+                      <div
+                        key={record.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                            <span className="font-medium">
+                              {record.student?.firstName?.charAt(0)}
+                              {record.student?.lastName?.charAt(0)}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {record.student?.firstName} {record.student?.lastName}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {record.student?.email}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          {record.checkInTime && (
+                            <div className="text-sm text-muted-foreground">
+                              Check-in: {new Date(record.checkInTime).toLocaleTimeString()}
+                            </div>
+                          )}
+                          <Select
+                            value={record.status}
+                            onValueChange={(value) => handleStatusChange(record.id, value)}
+                          >
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="present">Present</SelectItem>
+                              <SelectItem value="absent">Absent</SelectItem>
+                              <SelectItem value="late">Late</SelectItem>
+                              <SelectItem value="excused">Excused</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-medium">
-                          {record.student.firstName} {record.student.lastName}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {record.student.email}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {record.checkInTime && (
-                        <div className="text-sm text-muted-foreground">
-                          Check-in: {record.checkInTime}
-                        </div>
-                      )}
-                      <Select defaultValue={record.status}>
-                        <SelectTrigger className="w-[130px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="present">Present</SelectItem>
-                          <SelectItem value="absent">Absent</SelectItem>
-                          <SelectItem value="late">Late</SelectItem>
-                          <SelectItem value="excused">Excused</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="mt-6 flex justify-end">
-                <Button>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Save Attendance
-                </Button>
-              </div>
+                  <div className="mt-6 flex justify-end">
+                    <Button onClick={handleSaveAttendance} disabled={isSaving || selectedClass === 'all'}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      {isSaving ? 'Saving...' : 'Save Attendance'}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

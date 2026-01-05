@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,56 +28,45 @@ import {
   Mail,
   MoreHorizontal,
   User,
+  FileText,
 } from 'lucide-react';
-import { useState } from 'react';
-
-// Mock data for demonstration
-const mockStudents = [
-  {
-    id: '1',
-    firstName: 'Alice',
-    lastName: 'Johnson',
-    email: 'alice.johnson@school.edu',
-    phone: '+1 555-0101',
-    isActive: true,
-    roles: [{ role: 'student' }],
-    classesCount: 3,
-  },
-  {
-    id: '2',
-    firstName: 'Bob',
-    lastName: 'Smith',
-    email: 'bob.smith@school.edu',
-    phone: '+1 555-0102',
-    isActive: true,
-    roles: [{ role: 'student' }],
-    classesCount: 2,
-  },
-  {
-    id: '3',
-    firstName: 'Carol',
-    lastName: 'Williams',
-    email: 'carol.williams@school.edu',
-    phone: '+1 555-0103',
-    isActive: true,
-    roles: [{ role: 'student' }],
-    classesCount: 4,
-  },
-  {
-    id: '4',
-    firstName: 'David',
-    lastName: 'Brown',
-    email: 'david.brown@school.edu',
-    phone: '+1 555-0104',
-    isActive: false,
-    roles: [{ role: 'student' }],
-    classesCount: 0,
-  },
-];
+import { studentsApi, Student } from '@/lib/api/students';
 
 export default function StudentsPage() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    fetchStudents();
+  }, [searchTerm, statusFilter]);
+
+  const fetchStudents = async () => {
+    try {
+      setIsLoading(true);
+      const response = await studentsApi.getAll({
+        search: searchTerm || undefined,
+      });
+
+      if (response.success) {
+        let filteredStudents = response.data;
+
+        if (statusFilter !== 'all') {
+          filteredStudents = filteredStudents.filter(
+            (student) =>
+              statusFilter === 'active' ? student.isActive : !student.isActive
+          );
+        }
+
+        setStudents(filteredStudents);
+      }
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -87,10 +79,16 @@ export default function StudentsPage() {
                 Manage student records and enrollments
               </p>
             </div>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Student
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline">
+                <FileText className="mr-2 h-4 w-4" />
+                Import CSV
+              </Button>
+              <Button>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Student
+              </Button>
+            </div>
           </div>
 
           <Card>
@@ -123,58 +121,68 @@ export default function StudentsPage() {
                 </Select>
               </div>
 
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-center">Classes</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockStudents.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                            <User className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <div className="font-medium">
-                              {student.firstName} {student.lastName}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : students.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No students found</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">Classes</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                              <User className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <div className="font-medium">
+                                {student.firstName} {student.lastName}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          {student.email}
-                        </div>
-                      </TableCell>
-                      <TableCell>{student.phone}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={student.isActive ? 'success' : 'secondary'}
-                        >
-                          {student.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {student.classesCount}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            {student.email}
+                          </div>
+                        </TableCell>
+                        <TableCell>{student.phone || '-'}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={student.isActive ? 'success' : 'secondary'}
+                          >
+                            {student.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {student.classes?.length || 0}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>

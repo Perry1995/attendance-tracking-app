@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { attendanceService } from '../services/attendanceService';
+import { AuthRequest } from '../middleware/auth';
 
 export const getAttendanceRecords = async (req: Request, res: Response) => {
   try {
@@ -68,7 +69,7 @@ export const getAttendanceSummary = async (req: Request, res: Response) => {
   }
 };
 
-export const createAttendanceRecords = async (req: Request, res: Response) => {
+export const createAttendanceRecords = async (req: AuthRequest, res: Response) => {
   try {
     const { classId, date, records, notes } = req.body;
     const userId = req.user?.userId;
