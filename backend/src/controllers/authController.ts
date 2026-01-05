@@ -1,36 +1,37 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
+import { authService } from '../services/authService';
+import { AuthRequest } from '../middleware/auth';
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // TODO: Implement login logic
-    // 1. Validate user credentials
-    // 2. Generate JWT tokens
-    // 3. Return tokens and user data
+    if (!email || !password) {
+      return sendError(res, 'Email and password are required', 400);
+    }
 
-    return sendSuccess(res, { message: 'Login endpoint - Implementation pending' });
+    const result = await authService.login({ email, password });
+    return sendSuccess(res, result, 'Login successful');
   } catch (error) {
-    return sendError(res, 'Login failed', 500);
+    const message = error instanceof Error ? error.message : 'Login failed';
+    return sendError(res, message, 401);
   }
 };
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, phone } = req.body;
 
-    // TODO: Implement registration logic
-    // 1. Validate input
-    // 2. Check if user exists
-    // 3. Hash password
-    // 4. Create user
-    // 5. Generate JWT tokens
-    // 6. Return tokens and user data
+    if (!email || !password || !firstName || !lastName) {
+      return sendError(res, 'Email, password, firstName, and lastName are required', 400);
+    }
 
-    return sendSuccess(res, { message: 'Register endpoint - Implementation pending' }, '', 201);
+    const result = await authService.register({ email, password, firstName, lastName, phone });
+    return sendSuccess(res, result, 'Registration successful', '', 201);
   } catch (error) {
-    return sendError(res, 'Registration failed', 500);
+    const message = error instanceof Error ? error.message : 'Registration failed';
+    return sendError(res, message, 400);
   }
 };
 
@@ -38,38 +39,44 @@ export const refreshToken = async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
 
-    // TODO: Implement refresh token logic
-    // 1. Verify refresh token
-    // 2. Generate new access token
-    // 3. Return new tokens
+    if (!refreshToken) {
+      return sendError(res, 'Refresh token is required', 400);
+    }
 
-    return sendSuccess(res, { message: 'Refresh token endpoint - Implementation pending' });
+    const result = await authService.refreshToken(refreshToken);
+    return sendSuccess(res, result, 'Token refreshed successfully');
   } catch (error) {
-    return sendError(res, 'Token refresh failed', 500);
+    const message = error instanceof Error ? error.message : 'Token refresh failed';
+    return sendError(res, message, 401);
   }
 };
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    // TODO: Implement logout logic
-    // 1. Revoke refresh token
-    // 2. Add access token to blacklist (optional)
+    const { refreshToken } = req.body;
 
-    return sendSuccess(res, { message: 'Logout endpoint - Implementation pending' });
+    if (!refreshToken) {
+      return sendError(res, 'Refresh token is required', 400);
+    }
+
+    await authService.logout(refreshToken);
+    return sendSuccess(res, null, 'Logout successful');
   } catch (error) {
-    return sendError(res, 'Logout failed', 500);
+    const message = error instanceof Error ? error.message : 'Logout failed';
+    return sendError(res, message, 400);
   }
 };
 
-export const getProfile = async (req: Request, res: Response) => {
+export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
-    // TODO: Implement get profile logic
-    // 1. Get user from JWT
-    // 2. Fetch user data from database
-    // 3. Return user profile
+    if (!req.user) {
+      return sendError(res, 'User not authenticated', 401);
+    }
 
-    return sendSuccess(res, { message: 'Get profile endpoint - Implementation pending' });
+    const profile = await authService.getProfile(req.user.userId);
+    return sendSuccess(res, profile, 'Profile retrieved successfully');
   } catch (error) {
-    return sendError(res, 'Failed to fetch profile', 500);
+    const message = error instanceof Error ? error.message : 'Failed to fetch profile';
+    return sendError(res, message, 404);
   }
 };

@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -13,8 +16,12 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    phone: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+  const { register } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -23,15 +30,52 @@ export default function RegisterPage() {
     });
   };
 
+  const validatePassword = (password: string): boolean => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    return (
+      password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
+
+    // Validate form
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!validatePassword(formData.password)) {
+      setError(
+        'Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+      );
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      // TODO: Implement registration logic
-      console.log('Register:', formData);
-    } catch (error) {
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone || undefined,
+      });
+
+      router.push('/dashboard');
+    } catch (error: any) {
       console.error('Registration error:', error);
+      const message = error.response?.data?.error || error.message || 'Registration failed. Please try again.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -46,6 +90,12 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="firstName" className="text-sm font-medium">
@@ -59,6 +109,7 @@ export default function RegisterPage() {
                   value={formData.firstName}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -73,6 +124,7 @@ export default function RegisterPage() {
                   value={formData.lastName}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -88,6 +140,21 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="phone" className="text-sm font-medium">
+                Phone (Optional)
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={formData.phone}
+                onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -102,7 +169,11 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
+              <p className="text-xs text-gray-500">
+                Must be at least 8 characters with uppercase, lowercase, number, and special character
+              </p>
             </div>
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="text-sm font-medium">
@@ -116,6 +187,7 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>

@@ -28,10 +28,14 @@ const refreshTokenValidation = [
   body('refreshToken').notEmpty().withMessage('Refresh token is required'),
 ];
 
+const logoutValidation = [
+  body('refreshToken').notEmpty().withMessage('Refresh token is required'),
+];
+
 router.post('/login', validate(loginValidation), authController.login);
 router.post('/register', validate(registerValidation), authController.register);
 router.post('/refresh', validate(refreshTokenValidation), authController.refreshToken);
-router.post('/logout', authenticate, authController.logout);
+router.post('/logout', authenticate, validate(logoutValidation), authController.logout);
 router.get('/profile', authenticate, authController.getProfile);
 
 export default router;
