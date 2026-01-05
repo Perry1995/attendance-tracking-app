@@ -1,4 +1,5 @@
 import api from './client';
+import { apiClient } from './client';
 
 export interface LoginCredentials {
   email: string;
@@ -10,20 +11,29 @@ export interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
+  phone?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roles: Array<{ institutionId: string; role: string }>;
+}
+
+export interface Tokens {
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface AuthResponse {
   success: boolean;
   data: {
-    user: {
-      id: string;
-      email: string;
-      firstName: string;
-      lastName: string;
-    };
-    accessToken: string;
-    refreshToken: string;
+    user: User;
+    tokens: Tokens;
   };
+  message?: string;
 }
 
 export const authApi = {
@@ -37,8 +47,8 @@ export const authApi = {
     return response.data;
   },
 
-  logout: async (): Promise<void> => {
-    await api.post('/auth/logout');
+  logout: async (refreshToken: string): Promise<void> => {
+    await api.post('/auth/logout', { refreshToken });
   },
 
   refreshToken: async (refreshToken: string): Promise<AuthResponse> => {
@@ -49,5 +59,39 @@ export const authApi = {
   getProfile: async () => {
     const response = await api.get('/auth/profile');
     return response.data;
+  },
+};
+
+// Token management utilities
+export const tokenManager = {
+  setTokens: (tokens: Tokens) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('accessToken', tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+      apiClient.setToken(tokens.accessToken);
+    }
+  },
+
+  getAccessToken: (): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('accessToken');
+  },
+
+  getRefreshToken: (): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('refreshToken');
+  },
+
+  removeTokens: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      apiClient.removeToken();
+    }
+  },
+
+  hasValidTokens: (): boolean => {
+    const accessToken = tokenManager.getAccessToken();
+    return !!accessToken;
   },
 };
