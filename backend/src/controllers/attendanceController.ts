@@ -69,6 +69,25 @@ export const getAttendanceSummary = async (req: Request, res: Response) => {
   }
 };
 
+export const getDailyAttendanceSummary = async (req: Request, res: Response) => {
+  try {
+    const { classId, studentId, startDate, endDate } = req.query;
+
+    const summary = await attendanceService.getDailyAttendanceSummary({
+      classId: classId as string,
+      studentId: studentId as string,
+      startDate: startDate as string,
+      endDate: endDate as string,
+    });
+
+    return sendSuccess(res, summary, 'Daily attendance summary retrieved successfully');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch daily attendance summary';
+    return sendError(res, message, 500);
+  }
+};
+
+
 export const createAttendanceRecords = async (req: AuthRequest, res: Response) => {
   try {
     const { classId, date, records, notes } = req.body;

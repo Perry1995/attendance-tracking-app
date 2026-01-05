@@ -2,13 +2,18 @@ import app from './app';
 import { config } from './config/env';
 import { logger } from './config/logger';
 import { pool } from './config/database';
+import { createServer } from 'http';
+import { initSocket } from './services/socketService';
 
 const startServer = async () => {
   try {
     await pool.query('SELECT NOW()');
     logger.info('Database connection established');
 
-    const server = app.listen(config.port, () => {
+    const httpServer = createServer(app);
+    initSocket(httpServer);
+
+    const server = httpServer.listen(config.port, () => {
       logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
       logger.info(`API available at http://localhost:${config.port}${config.api.prefix}`);
     });

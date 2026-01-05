@@ -7,6 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardApi, DashboardStats, ActivityItem } from '@/lib/api/dashboard';
 import { Users, BookOpen, UserCheck, UserX, AlertCircle, Activity } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+
+const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'];
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -249,37 +261,69 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activities.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  <CardTitle>Recent Activity</CardTitle>
-                </div>
-                <CardDescription>Latest updates in your institution</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {activities.slice(0, 5).map((activity, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+          <div className="grid gap-6 md:grid-cols-2">
+            {stats && (userRole === 'admin' || userRole === 'teacher' || userRole === 'guardian') && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendance Summary</CardTitle>
+                  <CardDescription>Today's attendance distribution</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: 'Present', value: stats.presentToday || 0 },
+                        { name: 'Absent', value: stats.absentToday || 0 },
+                        { name: 'Late', value: stats.lateToday || 0 },
+                      ]}
                     >
-                      <div className="flex-1">
-                        <div className="font-medium">{activity.title}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {activity.description}
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value">
+                        {COLORS.map((color, index) => (
+                          <Cell key={`cell-${index}`} fill={color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {activities.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    <CardTitle>Recent Activity</CardTitle>
+                  </div>
+                  <CardDescription>Latest updates in your institution</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {activities.slice(0, 5).map((activity, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium">{activity.title}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {activity.description}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(activity.timestamp).toLocaleDateString()}
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(activity.timestamp).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
