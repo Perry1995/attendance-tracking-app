@@ -19,11 +19,11 @@ const attendanceValidation = [
 router.use(authenticate);
 
 // Routes accessible by teachers and admins
-router.get('/', attendanceController.getAttendanceRecords);
-router.get('/class/:classId', attendanceController.getClassAttendance);
+router.get('/', authorize(UserRole.ADMIN, UserRole.TEACHER), attendanceController.getAttendanceRecords);
+router.get('/class/:classId', authorize(UserRole.ADMIN, UserRole.TEACHER), attendanceController.getClassAttendance);
 router.get('/student/:studentId', attendanceController.getStudentAttendance);
-router.get('/summary', attendanceController.getAttendanceSummary);
-router.get('/summary/daily', attendanceController.getDailyAttendanceSummary);
+router.get('/summary', authorize(UserRole.ADMIN, UserRole.TEACHER), attendanceController.getAttendanceSummary);
+router.get('/summary/daily', authorize(UserRole.ADMIN, UserRole.TEACHER), attendanceController.getDailyAttendanceSummary);
 
 // Admin/Teacher only routes
 router.post(

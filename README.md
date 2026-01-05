@@ -24,49 +24,96 @@ This application provides a comprehensive solution for tracking student attendan
 ### Current Features
 
 - **Authentication & Authorization**
-  - JWT-based authentication
-  - Role-based access control (RBAC)
+  - JWT-based authentication with access and refresh tokens
+  - Role-based access control (RBAC) - Admin, Teacher, Student, Guardian
   - Secure password hashing with bcrypt
   - Token refresh mechanism
+  - Protected routes and API endpoints
 
 - **User Management**
   - Multiple user roles (Admin, Teacher, Student, Guardian)
-  - User profile management
-  - Email verification (ready for implementation)
+  - User CRUD operations
+  - Role assignment and management
+  - Bulk user import via CSV
+  - User search and filtering
+  - Profile management
 
 - **Institution Management**
   - Multi-institution support
-  - Institution details and settings
+  - Institution CRUD operations
+  - Institution details and contact information
   - User-institution relationships
+  - Active/Inactive status management
 
 - **Class Management**
   - Create and manage classes
   - Assign teachers to classes
   - Enroll students in classes
-  - Academic year tracking
+  - Academic year and section tracking
+  - Class filtering and search
+
+- **Student Management**
+  - Student CRUD operations
+  - Student profile management
+  - Class enrollment tracking
+  - Bulk student import via CSV
+  - Student search and filtering
+  - Active/Inactive status management
+
+- **Guardian Management**
+  - Link guardians to students
+  - Manage guardian-student relationships
+  - Primary guardian designation
+  - View guardian children
+  - Relationship updates and deletion
 
 - **Attendance Tracking**
   - Mark attendance (Present, Absent, Late, Excused)
   - Check-in/check-out times
   - Add notes to attendance records
   - Historical attendance data
+  - Class-based attendance marking
+  - Real-time status updates
+  - Date range filtering
 
-- **Guardian Features**
-  - Link guardians to students
-  - View student attendance
-  - Receive notifications (ready for implementation)
+- **Dashboard & Reporting**
+  - Role-based dashboard views
+  - Attendance statistics and summaries
+  - Daily attendance trends
+  - Attendance rate calculation
+  - Recent activity feed
+  - Generate attendance reports
+  - Export reports to PDF and CSV
+  - Interactive charts and graphs
+  - Quick access reports (Today, Weekly, Monthly)
+
+- **Settings & Preferences**
+  - Profile management
+  - Password change functionality
+  - Notification preferences (Email, Push)
+  - Theme selection (Light, Dark, System)
+  - Language selection
+  - Timezone settings
+  - Date/time format preferences
+  - System status monitoring
+
+- **Help & Support**
+  - Comprehensive help documentation
+  - FAQ section
+  - System status dashboard
+  - Support contact options
 
 ### Upcoming Features
 
-- Real-time notifications
-- Advanced reporting and analytics
-- Attendance patterns and insights
-- Bulk operations
-- Mobile app
-- Export functionality (PDF, CSV)
+- Email notification delivery (SMTP integration ready)
+- Real-time notifications via WebSockets
+- Advanced analytics and insights
+- Attendance pattern analysis
+- Mobile app (React Native or PWA)
 - Attendance QR code scanning
 - Geofencing for attendance
 - Integration with Learning Management Systems
+- Parent email alerts for absences/late arrivals
 
 ## 🛠️ Tech Stack
 

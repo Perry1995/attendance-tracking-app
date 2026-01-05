@@ -31,6 +31,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { classesApi, Class } from '@/lib/api/classes';
+import { toast } from 'sonner';
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -62,6 +63,7 @@ export default function ClassesPage() {
       setClasses(filteredClasses);
     } catch (error) {
       console.error('Failed to fetch classes:', error);
+      toast.error('Failed to load classes');
     } finally {
       setIsLoading(false);
     }

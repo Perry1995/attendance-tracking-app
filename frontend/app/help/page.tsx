@@ -1,4 +1,8 @@
+'use client';
+
 import Link from 'next/link';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,7 +17,9 @@ import {
 
 export default function HelpPage() {
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="container mx-auto p-6 max-w-4xl">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Help & Support</h1>
         <p className="text-xl text-muted-foreground">
@@ -179,5 +185,7 @@ export default function HelpPage() {
         </CardContent>
       </Card>
     </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

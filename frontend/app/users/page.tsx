@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { usersApi, User } from '@/lib/api/users';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { toast } from 'sonner';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -58,6 +59,7 @@ export default function UsersPage() {
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      toast.error('Failed to load users');
     } finally {
       setIsLoading(false);
     }

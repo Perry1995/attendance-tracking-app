@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { institutionsApi, Institution } from '@/lib/api/institutions';
+import { toast } from 'sonner';
 
 export default function InstitutionsPage() {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -58,6 +59,7 @@ export default function InstitutionsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch institutions:', error);
+      toast.error('Failed to load institutions');
     } finally {
       setIsLoading(false);
     }
