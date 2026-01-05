@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,42 +30,42 @@ import {
   Calendar,
   MoreHorizontal,
 } from 'lucide-react';
-import { useState } from 'react';
-
-// Mock data for demonstration
-const mockClasses = [
-  {
-    id: '1',
-    name: 'Mathematics 101',
-    section: 'A',
-    gradeLevel: '10th',
-    academicYear: '2024-2025',
-    teacher: { firstName: 'John', lastName: 'Doe' },
-    studentCount: 25,
-  },
-  {
-    id: '2',
-    name: 'Physics',
-    section: 'B',
-    gradeLevel: '11th',
-    academicYear: '2024-2025',
-    teacher: { firstName: 'Jane', lastName: 'Smith' },
-    studentCount: 20,
-  },
-  {
-    id: '3',
-    name: 'Chemistry',
-    section: 'A',
-    gradeLevel: '10th',
-    academicYear: '2024-2025',
-    teacher: { firstName: 'Robert', lastName: 'Johnson' },
-    studentCount: 22,
-  },
-];
+import { classesApi, Class } from '@/lib/api/classes';
 
 export default function ClassesPage() {
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [academicYear, setAcademicYear] = useState('all');
+
+  useEffect(() => {
+    fetchClasses();
+  }, [searchTerm, academicYear]);
+
+  const fetchClasses = async () => {
+    try {
+      setIsLoading(true);
+      const response = await classesApi.getAll({
+        academicYear: academicYear !== 'all' ? academicYear : undefined,
+      });
+
+      let filteredClasses = response;
+
+      if (searchTerm) {
+        filteredClasses = filteredClasses.filter((classItem) =>
+          classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          classItem.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          classItem.gradeLevel?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      setClasses(filteredClasses);
+    } catch (error) {
+      console.error('Failed to fetch classes:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -111,50 +114,62 @@ export default function ClassesPage() {
                 </Select>
               </div>
 
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Class Name</TableHead>
-                    <TableHead>Section</TableHead>
-                    <TableHead>Grade Level</TableHead>
-                    <TableHead>Academic Year</TableHead>
-                    <TableHead>Teacher</TableHead>
-                    <TableHead className="text-center">Students</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockClasses.map((classItem) => (
-                    <TableRow key={classItem.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-muted-foreground" />
-                          {classItem.name}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{classItem.section}</Badge>
-                      </TableCell>
-                      <TableCell>{classItem.gradeLevel}</TableCell>
-                      <TableCell>{classItem.academicYear}</TableCell>
-                      <TableCell>
-                        {classItem.teacher.firstName} {classItem.teacher.lastName}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          {classItem.studentCount}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : classes.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No classes found</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Class Name</TableHead>
+                      <TableHead>Section</TableHead>
+                      <TableHead>Grade Level</TableHead>
+                      <TableHead>Academic Year</TableHead>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead className="text-center">Students</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {classes.map((classItem) => (
+                      <TableRow key={classItem.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            {classItem.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{classItem.section || '-'}</Badge>
+                        </TableCell>
+                        <TableCell>{classItem.gradeLevel || '-'}</TableCell>
+                        <TableCell>{classItem.academicYear}</TableCell>
+                        <TableCell>
+                          {classItem.teacher
+                            ? `${classItem.teacher.firstName} ${classItem.teacher.lastName}`
+                            : 'Not assigned'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            {classItem.studentCount || 0}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>

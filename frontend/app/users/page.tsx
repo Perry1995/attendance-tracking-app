@@ -23,49 +23,41 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Users,
   UserPlus,
   Search,
   Mail,
   MoreHorizontal,
-  User,
-  FileText,
+  Shield,
   Upload,
 } from 'lucide-react';
-import { studentsApi, Student } from '@/lib/api/students';
+import { usersApi, User } from '@/lib/api/users';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 
-export default function StudentsPage() {
-  const [students, setStudents] = useState<Student[]>([]);
+export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [showCSVImport, setShowCSVImport] = useState(false);
 
   useEffect(() => {
-    fetchStudents();
-  }, [searchTerm, statusFilter]);
+    fetchUsers();
+  }, [searchTerm, roleFilter]);
 
-  const fetchStudents = async () => {
+  const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const response = await studentsApi.getAll({
+      const response = await usersApi.getUsers({
         search: searchTerm || undefined,
+        role: roleFilter !== 'all' ? roleFilter : undefined,
       });
 
       if (response.success) {
-        let filteredStudents = response.data;
-
-        if (statusFilter !== 'all') {
-          filteredStudents = filteredStudents.filter(
-            (student) =>
-              statusFilter === 'active' ? student.isActive : !student.isActive
-          );
-        }
-
-        setStudents(filteredStudents);
+        setUsers(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch students:', error);
+      console.error('Failed to fetch users:', error);
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +65,7 @@ export default function StudentsPage() {
 
   const handleImportSuccess = () => {
     setShowCSVImport(false);
-    fetchStudents(); // Refresh the students list
+    fetchUsers(); // Refresh the users list
   };
 
   return (
@@ -82,9 +74,9 @@ export default function StudentsPage() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">Students</h1>
+              <h1 className="text-3xl font-bold">Users</h1>
               <p className="text-muted-foreground">
-                Manage student records and enrollments
+                Manage user accounts and permissions
               </p>
             </div>
             <div className="flex gap-2">
@@ -94,16 +86,16 @@ export default function StudentsPage() {
               </Button>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add Student
+                Add User
               </Button>
             </div>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>All Students</CardTitle>
+              <CardTitle>All Users</CardTitle>
               <CardDescription>
-                View and manage all students in your institution
+                View and manage all users in your institution
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -111,20 +103,22 @@ export default function StudentsPage() {
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search students..."
+                    placeholder="Search users..."
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
                   <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="Role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="teacher">Teacher</SelectItem>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="guardian">Guardian</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -133,33 +127,39 @@ export default function StudentsPage() {
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : students.length === 0 ? (
+              ) : users.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">No students found</p>
+                  <p className="text-muted-foreground">No users found</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Institution</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-center">Classes</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map((student) => (
-                      <TableRow key={student.id}>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                              <User className="h-5 w-5 text-muted-foreground" />
+                              <span className="font-medium">
+                                {user.firstName.charAt(0)}
+                                {user.lastName.charAt(0)}
+                              </span>
                             </div>
                             <div>
                               <div className="font-medium">
-                                {student.firstName} {student.lastName}
+                                {user.firstName} {user.lastName}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                ID: {user.id}
                               </div>
                             </div>
                           </div>
@@ -167,19 +167,28 @@ export default function StudentsPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-muted-foreground" />
-                            {student.email}
+                            {user.email}
                           </div>
                         </TableCell>
-                        <TableCell>{student.phone || '-'}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.roles?.map((userRole, index) => (
+                              <Badge key={index} variant="outline">
+                                <Shield className="mr-1 h-3 w-3" />
+                                {userRole.role}
+                              </Badge>
+                            )) || <Badge variant="secondary">No role</Badge>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {user.roles?.[0]?.institution?.name || 'N/A'}
+                        </TableCell>
                         <TableCell>
                           <Badge
-                            variant={student.isActive ? 'success' : 'secondary'}
+                            variant={user.isActive ? 'success' : 'secondary'}
                           >
-                            {student.isActive ? 'Active' : 'Inactive'}
+                            {user.isActive ? 'Active' : 'Inactive'}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {student.classes?.length || 0}
                         </TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon">
