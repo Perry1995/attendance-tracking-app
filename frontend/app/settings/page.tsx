@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,8 @@ import {
   Save,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { authApi } from '@/lib/api/auth';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -62,13 +64,44 @@ export default function SettingsPage() {
     timeFormat: '12h',
   });
 
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedNotifications = localStorage.getItem('notifications');
+      const savedPreferences = localStorage.getItem('preferences');
+
+      if (savedNotifications) {
+        try {
+          setNotifications(JSON.parse(savedNotifications));
+        } catch (e) {
+          console.error('Failed to parse notifications:', e);
+        }
+      }
+
+      if (savedPreferences) {
+        try {
+          setPreferences(JSON.parse(savedPreferences));
+        } catch (e) {
+          console.error('Failed to parse preferences:', e);
+        }
+      }
+    }
+  }, []);
+
   const handleProfileUpdate = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement profile update API call
-      console.log('Updating profile:', profile);
+      const response = await authApi.updateProfile({
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        phone: profile.phone,
+      });
+      
+      toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Failed to update profile:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
@@ -76,17 +109,27 @@ export default function SettingsPage() {
 
   const handlePasswordChange = async () => {
     if (password.new !== password.confirm) {
-      alert('New passwords do not match');
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (!password.current || !password.new) {
+      toast.error('Please fill in all password fields');
       return;
     }
 
     setIsLoading(true);
     try {
-      // TODO: Implement password change API call
-      console.log('Changing password');
+      await authApi.changePassword({
+        currentPassword: password.current,
+        newPassword: password.new,
+      });
+      
       setPassword({ current: '', new: '', confirm: '' });
+      toast.success('Password changed successfully. Please log in again with your new password.');
     } catch (error) {
       console.error('Failed to change password:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to change password');
     } finally {
       setIsLoading(false);
     }
@@ -94,19 +137,27 @@ export default function SettingsPage() {
 
   const handleNotificationUpdate = async () => {
     try {
-      // TODO: Implement notification settings API call
-      console.log('Updating notifications:', notifications);
+      // Save to localStorage for now
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('notifications', JSON.stringify(notifications));
+      }
+      toast.success('Notification preferences saved');
     } catch (error) {
       console.error('Failed to update notifications:', error);
+      toast.error('Failed to save notification preferences');
     }
   };
 
   const handlePreferenceUpdate = async () => {
     try {
-      // TODO: Implement preferences API call
-      console.log('Updating preferences:', preferences);
+      // Save to localStorage for now
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('preferences', JSON.stringify(preferences));
+      }
+      toast.success('Preferences saved');
     } catch (error) {
       console.error('Failed to update preferences:', error);
+      toast.error('Failed to save preferences');
     }
   };
 

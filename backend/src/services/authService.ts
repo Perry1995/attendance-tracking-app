@@ -215,6 +215,70 @@ export const authService = {
     };
   },
 
+  async updateProfile(userId: string, updates: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  }) {
+    // If email is being updated, check if it already exists
+    if (updates.email) {
+      const existingUser = await userService.findByEmail(updates.email);
+      if (existingUser && existingUser.id !== userId) {
+        throw new Error('Email already exists');
+      }
+    }
+
+    // Update user
+    const updatedUser = await userService.updateUser(userId, {
+      first_name: updates.firstName,
+      last_name: updates.lastName,
+      email: updates.email,
+      phone: updates.phone,
+    });
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name,
+      phone: updatedUser.phone,
+      avatarUrl: updatedUser.avatar_url,
+    };
+  },
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    // Get user
+    const user = await userService.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify current password
+    const isPasswordValid = await comparePassword(currentPassword, user.password_hash);
+    if (!isPasswordValid) {
+      throw new Error('Current password is incorrect');
+    }
+
+    // Validate new password strength
+    if (!validatePasswordStrength(newPassword)) {
+      throw new Error(
+        'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+      );
+    }
+
+    // Hash new password
+    const passwordHash = await hashPassword(newPassword);
+
+    // Update password
+    await userService.updateUser(userId, {
+      password_hash: passwordHash,
+    });
+
+    // Revoke all user refresh tokens for security
+    await refreshTokenService.revokeAllUserTokens(userId);
+  },
+
   private async generateTokens(payload: JwtPayload): Promise<TokenPair> {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
