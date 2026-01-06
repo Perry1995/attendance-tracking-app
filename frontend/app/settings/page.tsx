@@ -17,13 +17,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Settings,
   User,
   Bell,
   Shield,
   Database,
   Palette,
-  Globe,
   Key,
   Save,
 } from 'lucide-react';
@@ -91,7 +89,7 @@ export default function SettingsPage() {
   const handleProfileUpdate = async () => {
     setIsLoading(true);
     try {
-      const response = await authApi.updateProfile({
+      await authApi.updateProfile({
         firstName: profile.firstName,
         lastName: profile.lastName,
         email: profile.email,

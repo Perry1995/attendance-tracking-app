@@ -28,7 +28,6 @@ import {
   Mail,
   MoreHorizontal,
   User,
-  FileText,
   Upload,
 } from 'lucide-react';
 import { studentsApi, Student } from '@/lib/api/students';
@@ -44,6 +43,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, statusFilter]);
 
   const fetchStudents = async () => {

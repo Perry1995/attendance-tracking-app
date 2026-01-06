@@ -16,13 +16,14 @@ import {
 } from '@/components/ui/table';
 import { Search, UserPlus, Users, Mail, Phone, ExternalLink } from 'lucide-react';
 import { usersApi } from '@/lib/api/users';
-import { guardiansApi, GuardianRelationship } from '@/lib/api/guardians';
+import { GuardianFormDialog } from '@/components/GuardianFormDialog';
 import { toast } from 'sonner';
 
 export default function GuardiansPage() {
-  const [guardians, setGuardians] = useState<any[]>([]);
+  const [guardians, setGuardians] = useState<Array<{id: string; firstName: string; lastName: string; email: string; phone?: string}>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showGuardianForm, setShowGuardianForm] = useState(false);
 
   useEffect(() => {
     fetchGuardians();
@@ -32,7 +33,7 @@ export default function GuardiansPage() {
     try {
       setIsLoading(true);
       // Fetch users with role 'guardian'
-      const response = await usersApi.getAll({ role: 'guardian' as any });
+      const response = await usersApi.getUsers({ role: 'guardian' });
       if (response.success) {
         setGuardians(response.data);
       }
@@ -50,6 +51,11 @@ export default function GuardiansPage() {
       g.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleGuardianFormSuccess = () => {
+    setShowGuardianForm(false);
+    toast.success('Guardian relationship created successfully');
+  };
+
   return (
     <ProtectedRoute>
       <DashboardLayout>
@@ -61,9 +67,9 @@ export default function GuardiansPage() {
                 Manage guardian records and student relationships
               </p>
             </div>
-            <Button>
+            <Button onClick={() => setShowGuardianForm(true)}>
               <UserPlus className="mr-2 h-4 w-4" />
-              Add Guardian
+              Link Guardian to Student
             </Button>
           </div>
 
@@ -138,6 +144,11 @@ export default function GuardiansPage() {
             </CardContent>
           </Card>
         </div>
+        <GuardianFormDialog
+          isOpen={showGuardianForm}
+          onClose={() => setShowGuardianForm(false)}
+          onSuccess={handleGuardianFormSuccess}
+        />
       </DashboardLayout>
     </ProtectedRoute>
   );

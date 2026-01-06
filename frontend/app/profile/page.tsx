@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Mail, Phone, Building, Shield, Save } from 'lucide-react';
+import { Building, Save } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user } = useAuth();

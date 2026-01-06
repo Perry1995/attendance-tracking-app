@@ -26,15 +26,19 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { institutionsApi, Institution } from '@/lib/api/institutions';
+import { InstitutionFormDialog } from '@/components/InstitutionFormDialog';
 import { toast } from 'sonner';
 
 export default function InstitutionsPage() {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInstitutionForm, setShowInstitutionForm] = useState(false);
+  const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
 
   useEffect(() => {
     fetchInstitutions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
   const fetchInstitutions = async () => {
@@ -65,6 +69,22 @@ export default function InstitutionsPage() {
     }
   };
 
+  const handleInstitutionFormSuccess = () => {
+    setShowInstitutionForm(false);
+    setSelectedInstitution(null);
+    fetchInstitutions();
+  };
+
+  const handleAddInstitution = () => {
+    setSelectedInstitution(null);
+    setShowInstitutionForm(true);
+  };
+
+  const handleEditInstitution = (institution: Institution) => {
+    setSelectedInstitution(institution);
+    setShowInstitutionForm(true);
+  };
+
   return (
     <ProtectedRoute>
       <DashboardLayout>
@@ -76,7 +96,7 @@ export default function InstitutionsPage() {
                 Manage institutions and their details
               </p>
             </div>
-            <Button>
+            <Button onClick={handleAddInstitution}>
               <Plus className="mr-2 h-4 w-4" />
               Add Institution
             </Button>
@@ -184,7 +204,11 @@ export default function InstitutionsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditInstitution(institution)}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -196,6 +220,12 @@ export default function InstitutionsPage() {
             </CardContent>
           </Card>
         </div>
+        <InstitutionFormDialog
+          isOpen={showInstitutionForm}
+          onClose={() => setShowInstitutionForm(false)}
+          onSuccess={handleInstitutionFormSuccess}
+          institution={selectedInstitution}
+        />
       </DashboardLayout>
     </ProtectedRoute>
   );
