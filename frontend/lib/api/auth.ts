@@ -60,6 +60,24 @@ export const authApi = {
     const response = await api.get('/auth/profile');
     return response.data;
   },
+
+  updateProfile: async (data: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  }) => {
+    const response = await api.put('/auth/profile', data);
+    return response.data;
+  },
+
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    const response = await api.put('/auth/password', data);
+    return response.data;
+  },
 };
 
 // Token management utilities

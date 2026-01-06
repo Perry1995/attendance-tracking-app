@@ -199,22 +199,22 @@ export const userService = {
 
     if (filters?.search) {
       queryText += ` AND (
-        u.first_name ILIKE ${paramCount} OR
-        u.last_name ILIKE ${paramCount} OR
-        u.email ILIKE ${paramCount}
+        u.first_name ILIKE $${paramCount} OR
+        u.last_name ILIKE $${paramCount} OR
+        u.email ILIKE $${paramCount}
       )`;
       params.push(`%${filters.search}%`);
       paramCount++;
     }
 
     if (filters?.role) {
-      queryText += ` AND ur.role = ${paramCount}`;
+      queryText += ` AND ur.role = $${paramCount}`;
       params.push(filters.role);
       paramCount++;
     }
 
     if (filters?.institutionId) {
-      queryText += ` AND ur.institution_id = ${paramCount}`;
+      queryText += ` AND ur.institution_id = $${paramCount}`;
       params.push(filters.institutionId);
       paramCount++;
     }

@@ -80,3 +80,45 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
     return sendError(res, message, 404);
   }
 };
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return sendError(res, 'User not authenticated', 401);
+    }
+
+    const { firstName, lastName, email, phone } = req.body;
+    const profile = await authService.updateProfile(req.user.userId, {
+      firstName,
+      lastName,
+      email,
+      phone,
+    });
+
+    return sendSuccess(res, profile, 'Profile updated successfully');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update profile';
+    return sendError(res, message, 400);
+  }
+};
+
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return sendError(res, 'User not authenticated', 401);
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return sendError(res, 'Current password and new password are required', 400);
+    }
+
+    await authService.changePassword(req.user.userId, currentPassword, newPassword);
+
+    return sendSuccess(res, null, 'Password changed successfully');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to change password';
+    return sendError(res, message, 400);
+  }
+};
