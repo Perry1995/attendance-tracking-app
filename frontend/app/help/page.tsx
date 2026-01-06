@@ -12,7 +12,6 @@ import {
   MessageCircle,
   FileText,
   Video,
-  ExternalLink,
 } from 'lucide-react';
 
 export default function HelpPage() {

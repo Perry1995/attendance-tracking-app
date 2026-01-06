@@ -27,10 +27,10 @@ import {
   Plus,
   Search,
   Users,
-  Calendar,
   MoreHorizontal,
 } from 'lucide-react';
 import { classesApi, Class } from '@/lib/api/classes';
+import { ClassFormDialog } from '@/components/ClassFormDialog';
 import { toast } from 'sonner';
 
 export default function ClassesPage() {
@@ -38,9 +38,12 @@ export default function ClassesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [academicYear, setAcademicYear] = useState('all');
+  const [showClassForm, setShowClassForm] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
   useEffect(() => {
     fetchClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, academicYear]);
 
   const fetchClasses = async () => {
@@ -69,6 +72,22 @@ export default function ClassesPage() {
     }
   };
 
+  const handleClassFormSuccess = () => {
+    setShowClassForm(false);
+    setSelectedClass(null);
+    fetchClasses();
+  };
+
+  const handleAddClass = () => {
+    setSelectedClass(null);
+    setShowClassForm(true);
+  };
+
+  const handleEditClass = (classData: Class) => {
+    setSelectedClass(classData);
+    setShowClassForm(true);
+  };
+
   return (
     <ProtectedRoute>
       <DashboardLayout>
@@ -80,7 +99,7 @@ export default function ClassesPage() {
                 Manage your classes and sections
               </p>
             </div>
-            <Button>
+            <Button onClick={handleAddClass}>
               <Plus className="mr-2 h-4 w-4" />
               Create Class
             </Button>
@@ -163,7 +182,11 @@ export default function ClassesPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditClass(classItem)}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -175,6 +198,12 @@ export default function ClassesPage() {
             </CardContent>
           </Card>
         </div>
+        <ClassFormDialog
+          isOpen={showClassForm}
+          onClose={() => setShowClassForm(false)}
+          onSuccess={handleClassFormSuccess}
+          classData={selectedClass}
+        />
       </DashboardLayout>
     </ProtectedRoute>
   );

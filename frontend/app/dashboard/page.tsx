@@ -266,7 +266,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Attendance Summary</CardTitle>
-                  <CardDescription>Today's attendance distribution</CardDescription>
+                  <CardDescription>Today&apos;s attendance distribution</CardDescription>
                 </CardHeader>
                 <CardContent className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">

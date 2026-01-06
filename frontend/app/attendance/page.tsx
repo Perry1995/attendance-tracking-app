@@ -5,8 +5,6 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -26,18 +24,11 @@ import { attendanceApi, AttendanceRecord } from '@/lib/api/attendance';
 import { classesApi } from '@/lib/api/classes';
 import { toast } from 'sonner';
 
-const statusColors = {
-  present: 'success',
-  absent: 'destructive',
-  late: 'warning',
-  excused: 'secondary',
-};
-
 export default function AttendancePage() {
   const [date, setDate] = useState<Date>(new Date());
   const [selectedClass, setSelectedClass] = useState('all');
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [classes, setClasses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<{id: string; name: string; section: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -47,6 +38,7 @@ export default function AttendancePage() {
 
   useEffect(() => {
     fetchAttendance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, selectedClass]);
 
   const fetchClasses = async () => {

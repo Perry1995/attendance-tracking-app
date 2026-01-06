@@ -51,10 +51,10 @@ export default function ReportsPage() {
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState('all');
   const [reportType, setReportType] = useState('attendance-summary');
-  const [classes, setClasses] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>(null);
-  const [dailyData, setDailyData] = useState<any[]>([]);
+  const [classes, setClasses] = useState<Array<{id: string; name: string; section?: string}>>([]);
+  const [students, setStudents] = useState<Array<{id: string; firstName: string; lastName: string}>>([]);
+  const [summary, setSummary] = useState<{present: number; absent: number; late: number; excused: number; attendanceRate: number} | null>(null);
+  const [dailyData, setDailyData] = useState<Array<{date: string; present: number; absent: number}>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -86,7 +86,7 @@ export default function ReportsPage() {
   const generateReport = async () => {
     setIsLoading(true);
     try {
-      const params: any = {
+      const params: {startDate: string; endDate: string; classId?: string; studentId?: string} = {
         startDate: dateRange.start,
         endDate: dateRange.end,
       };
@@ -311,7 +311,7 @@ export default function ReportsPage() {
                   ) : (
                     <div className="text-center py-8 text-muted-foreground border rounded-lg">
                       <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Click "Generate Report" to see summary</p>
+                      <p>Click &ldquo;Generate Report&rdquo; to see summary</p>
                     </div>
                   )}
                 </TabsContent>
@@ -326,7 +326,7 @@ export default function ReportsPage() {
                         <div className="text-center py-8 text-muted-foreground">
                           <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                           <p>Detailed report will be generated here</p>
-                          <p className="text-sm">Click "Generate Report" to view detailed records</p>
+                          <p className="text-sm">Click &ldquo;Generate Report&rdquo; to view detailed records</p>
                         </div>
                       </div>
                     </CardContent>
@@ -444,7 +444,7 @@ export default function ReportsPage() {
                 >
                   <Users className="h-8 w-8" />
                   <div className="text-center">
-                    <div className="font-medium">Today's Attendance</div>
+                    <div className="font-medium">Today&apos;s Attendance</div>
                     <div className="text-sm text-muted-foreground">Quick daily report</div>
                   </div>
                 </Button>

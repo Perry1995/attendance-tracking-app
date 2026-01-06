@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Users,
   UserPlus,
   Search,
   Mail,
@@ -33,6 +32,7 @@ import {
 } from 'lucide-react';
 import { usersApi, User } from '@/lib/api/users';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { UserFormDialog } from '@/components/UserFormDialog';
 import { toast } from 'sonner';
 
 export default function UsersPage() {
@@ -41,6 +41,8 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -70,6 +72,22 @@ export default function UsersPage() {
     fetchUsers(); // Refresh the users list
   };
 
+  const handleUserFormSuccess = () => {
+    setShowUserForm(false);
+    setSelectedUser(null);
+    fetchUsers(); // Refresh the users list
+  };
+
+  const handleAddUser = () => {
+    setSelectedUser(null);
+    setShowUserForm(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setShowUserForm(true);
+  };
+
   return (
     <ProtectedRoute>
       <DashboardLayout>
@@ -86,7 +104,7 @@ export default function UsersPage() {
                 <Upload className="mr-2 h-4 w-4" />
                 Import CSV
               </Button>
-              <Button>
+              <Button onClick={handleAddUser}>
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add User
               </Button>
@@ -193,7 +211,11 @@ export default function UsersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditUser(user)}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -209,6 +231,12 @@ export default function UsersPage() {
           isOpen={showCSVImport}
           onClose={() => setShowCSVImport(false)}
           onSuccess={handleImportSuccess}
+        />
+        <UserFormDialog
+          isOpen={showUserForm}
+          onClose={() => setShowUserForm(false)}
+          onSuccess={handleUserFormSuccess}
+          user={selectedUser}
         />
       </DashboardLayout>
     </ProtectedRoute>
