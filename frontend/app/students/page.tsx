@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { studentsApi, Student } from '@/lib/api/students';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { StudentFormDialog } from '@/components/StudentFormDialog';
 import { toast } from 'sonner';
 
 export default function StudentsPage() {
@@ -40,6 +41,8 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [showStudentForm, setShowStudentForm] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   useEffect(() => {
     fetchStudents();
@@ -78,6 +81,22 @@ export default function StudentsPage() {
     fetchStudents(); // Refresh the students list
   };
 
+  const handleAddStudent = () => {
+    setSelectedStudent(null);
+    setShowStudentForm(true);
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setShowStudentForm(true);
+  };
+
+  const handleStudentFormSuccess = () => {
+    setShowStudentForm(false);
+    setSelectedStudent(null);
+    fetchStudents();
+  };
+
   return (
     <ProtectedRoute>
       <DashboardLayout>
@@ -94,7 +113,7 @@ export default function StudentsPage() {
                 <Upload className="mr-2 h-4 w-4" />
                 Import CSV
               </Button>
-              <Button>
+              <Button onClick={handleAddStudent}>
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add Student
               </Button>
@@ -184,7 +203,11 @@ export default function StudentsPage() {
                           {student.classes?.length || 0}
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditStudent(student)}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -200,6 +223,12 @@ export default function StudentsPage() {
           isOpen={showCSVImport}
           onClose={() => setShowCSVImport(false)}
           onSuccess={handleImportSuccess}
+        />
+        <StudentFormDialog
+          isOpen={showStudentForm}
+          onClose={() => setShowStudentForm(false)}
+          onSuccess={handleStudentFormSuccess}
+          studentData={selectedStudent}
         />
       </DashboardLayout>
     </ProtectedRoute>

@@ -224,7 +224,7 @@ export default function InstitutionsPage() {
           isOpen={showInstitutionForm}
           onClose={() => setShowInstitutionForm(false)}
           onSuccess={handleInstitutionFormSuccess}
-          institution={selectedInstitution}
+          institutionData={selectedInstitution}
         />
       </DashboardLayout>
     </ProtectedRoute>

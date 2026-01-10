@@ -43,10 +43,12 @@ export default function AttendancePage() {
 
   const fetchClasses = async () => {
     try {
-      const response = await classesApi.getClasses();
-      if (response.success) {
-        setClasses(response.data);
-      }
+      const response = await classesApi.getAll();
+      setClasses(response.map(cls => ({ 
+        id: cls.id, 
+        name: cls.name, 
+        section: cls.section || '' 
+      })));
     } catch (error) {
       console.error('Failed to fetch classes:', error);
       toast.error('Failed to load classes');
