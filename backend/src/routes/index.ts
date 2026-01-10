@@ -9,6 +9,7 @@ import classRoutes from './classRoutes';
 import studentRoutes from './studentRoutes';
 import attendanceRoutes from './attendanceRoutes';
 import reportRoutes from './reportRoutes';
+import userPreferenceRoutes from './userPreferenceRoutes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/classes', classRoutes);
 router.use('/students', studentRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/reports', reportRoutes);
+router.use('/preferences', userPreferenceRoutes);
 
 export default router;

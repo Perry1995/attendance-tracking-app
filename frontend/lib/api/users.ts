@@ -29,9 +29,10 @@ export interface BulkImportData {
 }
 
 export interface BulkImportResult {
-  success: number;
+  total: number;
+  successful: number;
   failed: number;
-  errors: Array<{ email: string; error: string }>;
+  errors: string[];
 }
 
 export const usersApi = {

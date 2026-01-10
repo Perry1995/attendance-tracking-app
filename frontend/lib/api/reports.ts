@@ -1,4 +1,16 @@
 import api from './client';
+import { format } from 'date-fns';
+
+const downloadFile = (blob: Blob, filename: string) => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
 
 export const reportsApi = {
   exportAttendancePDF: async (params: {
@@ -7,7 +19,14 @@ export const reportsApi = {
     classId?: string;
     studentId?: string;
   }) => {
-    const response = await api.get('/reports/attendance/pdf', { params });
+    const response = await api.get('/reports/attendance/pdf', {
+      params,
+      responseType: 'blob',
+    });
+    
+    const filename = `attendance-report-${format(new Date(), 'yyyyMMdd')}.pdf`;
+    downloadFile(new Blob([response.data]), filename);
+    
     return response;
   },
 
@@ -17,7 +36,14 @@ export const reportsApi = {
     classId?: string;
     studentId?: string;
   }) => {
-    const response = await api.get('/reports/attendance/csv', { params });
+    const response = await api.get('/reports/attendance/csv', {
+      params,
+      responseType: 'blob',
+    });
+    
+    const filename = `attendance-report-${format(new Date(), 'yyyyMMdd')}.csv`;
+    downloadFile(new Blob([response.data]), filename);
+    
     return response;
   },
 
@@ -26,7 +52,14 @@ export const reportsApi = {
     startDate: string;
     endDate: string;
   }) => {
-    const response = await api.get('/reports/class/pdf', { params });
+    const response = await api.get('/reports/attendance/pdf', {
+      params,
+      responseType: 'blob',
+    });
+    
+    const filename = `class-attendance-report-${format(new Date(), 'yyyyMMdd')}.pdf`;
+    downloadFile(new Blob([response.data]), filename);
+    
     return response;
   },
 
@@ -35,7 +68,14 @@ export const reportsApi = {
     startDate: string;
     endDate: string;
   }) => {
-    const response = await api.get('/reports/student/pdf', { params });
+    const response = await api.get('/reports/attendance/pdf', {
+      params,
+      responseType: 'blob',
+    });
+    
+    const filename = `student-attendance-report-${format(new Date(), 'yyyyMMdd')}.pdf`;
+    downloadFile(new Blob([response.data]), filename);
+    
     return response;
   },
 };
