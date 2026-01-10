@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/lib/api/auth';
+import { preferencesApi, UserPreferences } from '@/lib/api/preferences';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -62,29 +63,39 @@ export default function SettingsPage() {
     timeFormat: '12h',
   });
 
-  // Load preferences from localStorage on mount
+  // Load preferences from backend on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedNotifications = localStorage.getItem('notifications');
-      const savedPreferences = localStorage.getItem('preferences');
-
-      if (savedNotifications) {
-        try {
-          setNotifications(JSON.parse(savedNotifications));
-        } catch (e) {
-          console.error('Failed to parse notifications:', e);
-        }
-      }
-
-      if (savedPreferences) {
-        try {
-          setPreferences(JSON.parse(savedPreferences));
-        } catch (e) {
-          console.error('Failed to parse preferences:', e);
-        }
-      }
+    if (user) {
+      loadPreferences();
     }
-  }, []);
+  }, [user]);
+
+  const loadPreferences = async () => {
+    try {
+      const response = await preferencesApi.getPreferences();
+      if (response.success && response.data) {
+        const prefs = response.data;
+        
+        setNotifications({
+          emailNotifications: prefs.emailNotifications,
+          pushNotifications: prefs.pushNotifications,
+          attendanceAlerts: prefs.attendanceAlerts,
+          absenceReminders: prefs.absenceReminders,
+          weeklyReports: prefs.weeklyReports,
+        });
+
+        setPreferences({
+          theme: prefs.theme,
+          language: prefs.language,
+          timezone: prefs.timezone,
+          dateFormat: prefs.dateFormat,
+          timeFormat: prefs.timeFormat,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load preferences:', error);
+    }
+  };
 
   const handleProfileUpdate = async () => {
     setIsLoading(true);
@@ -135,11 +146,19 @@ export default function SettingsPage() {
 
   const handleNotificationUpdate = async () => {
     try {
-      // Save to localStorage for now
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('notifications', JSON.stringify(notifications));
+      const notificationPrefs = {
+        emailNotifications: notifications.emailNotifications,
+        pushNotifications: notifications.pushNotifications,
+        attendanceAlerts: notifications.attendanceAlerts,
+        absenceReminders: notifications.absenceReminders,
+        weeklyReports: notifications.weeklyReports,
+      };
+
+      const response = await preferencesApi.updatePreferences(notificationPrefs);
+      
+      if (response.success) {
+        toast.success('Notification preferences saved');
       }
-      toast.success('Notification preferences saved');
     } catch (error) {
       console.error('Failed to update notifications:', error);
       toast.error('Failed to save notification preferences');
@@ -148,11 +167,19 @@ export default function SettingsPage() {
 
   const handlePreferenceUpdate = async () => {
     try {
-      // Save to localStorage for now
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('preferences', JSON.stringify(preferences));
+      const appPrefs = {
+        theme: preferences.theme,
+        language: preferences.language,
+        timezone: preferences.timezone,
+        dateFormat: preferences.dateFormat,
+        timeFormat: preferences.timeFormat,
+      };
+
+      const response = await preferencesApi.updatePreferences(appPrefs);
+      
+      if (response.success) {
+        toast.success('Preferences saved');
       }
-      toast.success('Preferences saved');
     } catch (error) {
       console.error('Failed to update preferences:', error);
       toast.error('Failed to save preferences');

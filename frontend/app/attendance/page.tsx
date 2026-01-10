@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Download, RefreshCw } from 'lucide-react';
 import { attendanceApi, AttendanceRecord } from '@/lib/api/attendance';
 import { classesApi } from '@/lib/api/classes';
+import { reportsApi } from '@/lib/api/reports';
 import { toast } from 'sonner';
 
 export default function AttendancePage() {
@@ -31,6 +32,7 @@ export default function AttendancePage() {
   const [classes, setClasses] = useState<{id: string; name: string; section: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchClasses();
@@ -65,7 +67,8 @@ export default function AttendancePage() {
         response = await attendanceApi.getClassAttendance(selectedClass, formattedDate);
       } else {
         response = await attendanceApi.getRecords({
-          date: formattedDate,
+          startDate: formattedDate,
+          endDate: formattedDate,
         });
       }
 
@@ -128,6 +131,32 @@ export default function AttendancePage() {
     }
   };
 
+  const handleExport = async (formatType: 'pdf' | 'csv') => {
+    try {
+      setIsExporting(true);
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      
+      const params = {
+        startDate: formattedDate,
+        endDate: formattedDate,
+        ...(selectedClass !== 'all' ? { classId: selectedClass } : {}),
+      };
+
+      if (formatType === 'pdf') {
+        await reportsApi.exportAttendancePDF(params);
+      } else {
+        await reportsApi.exportAttendanceCSV(params);
+      }
+      
+      toast.success(`Attendance exported as ${formatType.toUpperCase()}`);
+    } catch (error) {
+      console.error('Failed to export attendance:', error);
+      toast.error('Failed to export attendance');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <ProtectedRoute>
       <DashboardLayout>
@@ -140,9 +169,21 @@ export default function AttendancePage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
+              <Button 
+                variant="outline" 
+                onClick={() => handleExport('pdf')}
+                disabled={isExporting}
+              >
                 <Download className="mr-2 h-4 w-4" />
-                Export
+                {isExporting ? 'Exporting...' : 'Export PDF'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleExport('csv')}
+                disabled={isExporting}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {isExporting ? 'Exporting...' : 'Export CSV'}
               </Button>
             </div>
           </div>

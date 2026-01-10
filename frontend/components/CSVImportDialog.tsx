@@ -113,26 +113,77 @@ Bob,Johnson,bob.johnson@example.com,teacher,555-0103,TCH001
     setProgress(0);
     setImportResult(null);
 
+    let progressInterval: NodeJS.Timeout | null = null;
+
     try {
+      // Parse CSV file and convert to JSON
+      const text = await selectedFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error('CSV file must contain at least a header row and one data row');
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      const users = lines.slice(1).map((line, index) => {
+        const values = line.split(',').map(v => v.trim());
+        const user: any = {
+          firstName: '',
+          lastName: '',
+          email: '',
+          password: '',
+          role: 'student',
+        };
+
+        headers.forEach((header, idx) => {
+          const value = values[idx] || '';
+          const lowerHeader = header.toLowerCase();
+
+          if (lowerHeader.includes('firstname') || lowerHeader === 'firstname') {
+            user.firstName = value;
+          } else if (lowerHeader.includes('lastname') || lowerHeader === 'lastname') {
+            user.lastName = value;
+          } else if (lowerHeader.includes('email') || lowerHeader === 'email') {
+            user.email = value;
+          } else if (lowerHeader.includes('password') || lowerHeader === 'password') {
+            user.password = value || 'defaultPassword123';
+          } else if (lowerHeader.includes('role') || lowerHeader === 'role') {
+            user.role = value || 'student';
+          } else if (lowerHeader.includes('phone') || lowerHeader === 'phone') {
+            user.phone = value;
+          } else if (lowerHeader.includes('institution') || lowerHeader === 'institutionid') {
+            user.institutionId = value;
+          }
+        });
+
+        // Set default password if not provided
+        if (!user.password) {
+          user.password = 'defaultPassword123';
+        }
+
+        return user;
+      });
+
       // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
+      let progress = 0;
+      progressInterval = setInterval(() => {
+        progress = Math.min(progress + 10, 90);
+        setProgress(progress);
       }, 200);
 
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      const response = await usersApi.bulkImportUsers(formData);
+      const response = await usersApi.bulkImportUsers({ users });
       
-      clearInterval(progressInterval);
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setProgress(100);
 
       setImportResult({
         success: true,
         message: 'Import completed successfully',
         details: {
-          total: response.data?.total || 0,
-          successful: response.data?.successful || 0,
+          total: response.data?.total || users.length,
+          successful: response.data?.successful || users.length,
           failed: response.data?.failed || 0,
           errors: response.data?.errors || [],
         },
@@ -142,14 +193,19 @@ Bob,Johnson,bob.johnson@example.com,teacher,555-0103,TCH001
         onSuccess();
       }
     } catch (error: any) {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      setProgress(0);
+      
       setImportResult({
         success: false,
-        message: error.response?.data?.error || 'Import failed',
+        message: error.response?.data?.error || error.message || 'Import failed',
         details: {
           total: 0,
           successful: 0,
-          failed: 0,
-          errors: [error.message],
+          failed: 1,
+          errors: [error.message || 'Unknown error'],
         },
       });
     } finally {

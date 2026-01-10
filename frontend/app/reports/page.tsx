@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -56,6 +57,7 @@ export default function ReportsPage() {
   const [students, setStudents] = useState<Array<{id: string; firstName: string; lastName: string}>>([]);
   const [summary, setSummary] = useState<{present: number; absent: number; late: number; excused: number; attendanceRate: number} | null>(null);
   const [dailyData, setDailyData] = useState<Array<{date: string; present: number; absent: number}>>([]);
+  const [detailedRecords, setDetailedRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -74,7 +76,7 @@ export default function ReportsPage() {
         name: cls.name, 
         section: cls.section 
       })));
-      setStudents(studentsRes.map(student => ({
+      setStudents(studentsRes.data.map((student: any) => ({
         id: student.id,
         firstName: student.firstName,
         lastName: student.lastName,
@@ -102,9 +104,10 @@ export default function ReportsPage() {
       if (selectedClass !== 'all') params.classId = selectedClass;
       if (selectedStudent !== 'all') params.studentId = selectedStudent;
 
-      const [summaryRes, dailyRes] = await Promise.all([
+      const [summaryRes, dailyRes, recordsRes] = await Promise.all([
         attendanceApi.getSummary(params),
         attendanceApi.getDailySummary(params),
+        attendanceApi.getRecords(params),
       ]);
 
       if (summaryRes.success) {
@@ -112,6 +115,9 @@ export default function ReportsPage() {
       }
       if (dailyRes.success) {
         setDailyData(dailyRes.data);
+      }
+      if (recordsRes.success) {
+        setDetailedRecords(recordsRes.data);
       }
       toast.success('Report generated successfully');
     } catch (error) {
@@ -329,15 +335,91 @@ export default function ReportsPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Detailed Attendance Records</CardTitle>
+                      <CardDescription>
+                        Individual attendance records with check-in/check-out times
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
+                      {detailedRecords.length > 0 ? (
+                        <div className="border rounded-lg overflow-hidden">
+                          <table className="w-full text-sm">
+                            <thead className="bg-muted">
+                              <tr>
+                                <th className="px-4 py-3 text-left font-medium">Date</th>
+                                <th className="px-4 py-3 text-left font-medium">Student</th>
+                                <th className="px-4 py-3 text-left font-medium">Class</th>
+                                <th className="px-4 py-3 text-left font-medium">Status</th>
+                                <th className="px-4 py-3 text-left font-medium">Check In</th>
+                                <th className="px-4 py-3 text-left font-medium">Check Out</th>
+                                <th className="px-4 py-3 text-left font-medium">Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {detailedRecords.map((record) => (
+                                <tr key={record.id} className="border-t hover:bg-muted/50">
+                                  <td className="px-4 py-3">
+                                    {format(new Date(record.date), 'yyyy-MM-dd')}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {record.student ? (
+                                      <>
+                                        <div className="font-medium">
+                                          {record.student.firstName} {record.student.lastName}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {record.student.email}
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <span className="text-muted-foreground">Unknown</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {classes.find((c) => c.id === record.classId)?.name || '-'}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Badge
+                                      variant={
+                                        record.status === 'present'
+                                          ? 'default'
+                                          : record.status === 'absent'
+                                          ? 'destructive'
+                                          : record.status === 'late'
+                                          ? 'secondary'
+                                          : 'outline'
+                                      }
+                                    >
+                                      {record.status.charAt(0).toUpperCase() +
+                                        record.status.slice(1)}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {record.checkInTime
+                                      ? format(new Date(record.checkInTime), 'HH:mm:ss')
+                                      : '-'}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {record.checkOutTime
+                                      ? format(new Date(record.checkOutTime), 'HH:mm:ss')
+                                      : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-muted-foreground">
+                                    {record.notes || '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
                         <div className="text-center py-8 text-muted-foreground">
                           <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>Detailed report will be generated here</p>
-                          <p className="text-sm">Click &ldquo;Generate Report&rdquo; to view detailed records</p>
+                          <p>No detailed records found</p>
+                          <p className="text-sm">
+                            Click &ldquo;Generate Report&rdquo; to view detailed records
+                          </p>
                         </div>
-                      </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
