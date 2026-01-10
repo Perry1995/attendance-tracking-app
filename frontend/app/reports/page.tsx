@@ -25,7 +25,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEffect } from 'react';
-import { classesApi, studentsApi, attendanceApi, reportsApi } from '@/lib/api';
+import { classesApi, studentsApi, attendanceApi } from '@/lib/api';
+import { reportsApi } from '@/lib/api/reports';
 import { toast } from 'sonner';
 import {
   LineChart,
@@ -65,11 +66,19 @@ export default function ReportsPage() {
   const fetchFilters = async () => {
     try {
       const [classesRes, studentsRes] = await Promise.all([
-        classesApi.getClasses(),
-        studentsApi.getStudents(),
+        classesApi.getAll(),
+        studentsApi.getAll(),
       ]);
-      if (classesRes.success) setClasses(classesRes.data);
-      if (studentsRes.success) setStudents(studentsRes.data);
+      setClasses(classesRes.map(cls => ({ 
+        id: cls.id, 
+        name: cls.name, 
+        section: cls.section 
+      })));
+      setStudents(studentsRes.map(student => ({
+        id: student.id,
+        firstName: student.firstName,
+        lastName: student.lastName,
+      })));
     } catch (error) {
       console.error('Failed to fetch filters:', error);
       toast.error('Failed to load filter data');
